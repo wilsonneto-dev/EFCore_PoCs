@@ -61,3 +61,70 @@ docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Str0ngP455W0RD" -p 1433:1433 -d mc
     );
 ```
 
+## Relations
+
+#### Lazy Loading
+
+```
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder
+            .UseLazyLoadingProxies()
+        [...]
+    
+    var country = db.Countries.SingleOrDefault(x => x.Id == 1);
+    Console.WriteLine(country.Name);
+    Console.WriteLine(country.PresidentId);
+
+    // reference will be loaded here
+    Console.WriteLine(country.President.Name);
+```
+
+#### Eagger Loading
+
+```
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder
+            .UseLazyLoadingProxies()
+        [...]
+    
+        // already loaded here
+        var country = db.Countries
+            .Include(c => c.President)
+            .SingleOrDefault(x => x.Id == 1);
+
+        Console.WriteLine(country.President.Name);
+
+```
+
+#### Explicity loading
+
+```
+Explicit Loading:
+
+var country = db.Countries.SingleOrDefault(x => x.Id == 1);
+Console.WriteLine(country.Name);
+Console.WriteLine(country.PresidentId);
+
+db.Entry(country).Reference(c => c.President).Load(); 
+Console.WriteLine(country.President.Name);
+```
+
+#### Auto Iclude properties
+
+```
+    modelBuilder
+        .Entity<Country>()
+        .HasOne(x => x.President);
+    
+    // here auto included property
+    modelBuilder
+        .Entity<Country>()
+        .Navigation(p => p.President).AutoInclude();
+    [...]
+
+    var country = db.Countries.Find(1);
+    Console.WriteLine(country.President.Name);
+```
+
