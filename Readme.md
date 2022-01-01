@@ -1,5 +1,5 @@
 Para criação do banco de dados com docker:
-docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Str0ngP455W0RD" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2019-CU14-ubuntu-20.04
+`docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Str0ngP455W0RD" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2019-CU14-ubuntu-20.04`
 
 ### Shadow Properties
 
@@ -128,3 +128,27 @@ Console.WriteLine(country.President.Name);
     Console.WriteLine(country.President.Name);
 ```
 
+#### Relations
+
+```
+        modelBuilder
+            .Entity<Country>()
+            .HasOne(x => x.President);
+            
+        modelBuilder
+            .Entity<Country>()
+            .Navigation(p => p.President).AutoInclude();
+
+        not necessary 1-N
+        modelBuilder
+            .Entity<Country>()
+            .HasMany(x => x.Cities);
+            .WithOne(x => x.Estado)
+            .IsRequired(false) // podera haver cidade sem estado 
+
+        modelBuilder
+            .Entity<Movie>()
+            .HasMany(x => x.Actors)
+            .WithMany(x => x.Movies)
+            .UsingEntity(p => p.ToTable("ActorsMovies"));
+```
