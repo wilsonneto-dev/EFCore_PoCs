@@ -28,6 +28,22 @@ public class Program
         Console.WriteLine(country.Name);
         Console.WriteLine(country.President.Name);
         Console.WriteLine(country.Cities[0].Name);
+
+        /* many to many */
+        Actor a = new Actor() { Name = "Keano Reeves" };
+        Actor a2 = new Actor() { Name = "Jenifer Lawrence" };
+
+        Movie m1 = new Movie() { Name = "Matrix" };
+        Movie m2 = new Movie() { Name = "Jhon Wick" };
+        Movie m3 = new Movie() { Name = "Hunger Games" };
+        m1.Actors = new List<Actor>() { a, a2 };
+        m2.Actors = new List<Actor>() { a };
+
+        db.Movies.Add(m1);
+        db.Movies.Add(m2);
+        db.Movies.Add(m3);
+        db.Actors.Add(a2);
+        db.SaveChanges();
     }
 }
 
@@ -57,12 +73,14 @@ public class Actor
 {
     public int Id { get; set; }
     public string Name { get; set; }
+    public List<Movie> Movies {get; set;}
 }
 
 public class Movie
 {
     public int Id { get; set; }
     public string Name { get; set; }
+    public List<Actor> Actors {get; set;}
 }
 
 public class AppContext : DbContext
@@ -70,6 +88,8 @@ public class AppContext : DbContext
     public DbSet<President> Presidents { get; set; }
     public DbSet<Country> Countries { get; set; }
     public DbSet<City> Cities { get; set; }
+    public DbSet<Movie> Movies { get; set; }
+    public DbSet<Actor> Actors { get; set; }
 
     public AppContext() : base()
     {
@@ -87,6 +107,7 @@ public class AppContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // 1 - 1
         modelBuilder
             .Entity<Country>()
             .HasOne(x => x.President);
@@ -96,6 +117,7 @@ public class AppContext : DbContext
             .Navigation(p => p.President).AutoInclude();
 
         /* 
+        not necessary 1-N
         modelBuilder
             .Entity<Country>()
             .HasMany(x => x.Cities);
@@ -103,5 +125,29 @@ public class AppContext : DbContext
             .IsRequired(false) // podera haver cidade sem estado 
         */
 
+        /*
+        // .net default
+        modelBuilder
+            .Entity<Movie>()
+            .HasMany(x => x.Actors)
+            .WithMany(x => x.Movies)
+            .UsingEntity(p => p.ToTable("ActorsMovies"));
+        */
+
+        // change the table fields (the default is the navigation property name + id name)
+        /*
+        modelBuilder
+            .Entity<Movie>()
+            .HasMany(x => x.Actors)
+            .WithMany(x => x.Movies)
+            .UsingEntity<Dictionary<string, object>>(
+                "MoviesActors",
+                p => p.HasOne<Movie>().WithMany().HasForeignKey("MovieIdentifier"),
+                p => p.HasOne<Actor>().WithMany().HasForeignKey("ActorIdentifier"),
+                p => {
+                    p.Property<DateTime>("RegisteredAt").HasDefaulfValueSql("GETDATE()");
+                }
+            );
+        */
     }
 }
