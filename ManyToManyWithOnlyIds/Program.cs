@@ -8,58 +8,63 @@ public class Program
     static void Main(string[] args)
     {
         using var db = new AppContext();
-
-        /* 
-        Actor a = new Actor() { Name = "Keano Reeves" };
-        Actor a2 = new Actor() { Name = "Jenifer Lawrence" };
-
-        Movie m1 = new Movie() { Name = "Matrix" };
-        Movie m2 = new Movie() { Name = "Jhon Wick" };
-        Movie m3 = new Movie() { Name = "Hunger Games" };
-        m1.Actors = new List<Actor>() { a, a2 };
-        m2.Actors = new List<Actor>() { a };
-
-        db.Movies.Add(m1);
-        db.Movies.Add(m2);
-        db.Movies.Add(m3);
+        var repo = new MovieRepository(db);
+        
+        
+        /* Actor a = new Actor() { Name = "Keano Reeves", Id = Guid.NewGuid() };
+        Actor a2 = new Actor() { Name = "Jenifer Lawrence", Id = Guid.NewGuid() };
+        db.Actors.Add(a);
         db.Actors.Add(a2);
+        db.SaveChanges(); */
+        
+
+        
+        var movie01 = new Movie()
+        {
+            Id = Guid.NewGuid(),
+            Name = "Just testing 02",
+            ActorsIds = new List<Guid>() { new Guid("88237949-b13e-4793-bd5a-1eb01397bd94") , new Guid("c684c39e-22e6-410a-9291-98019510c98c")}
+        };
+        
+
+        repo.Insert(movie01);
+
+        /*
+        var ma = new MovieActor() { 
+            ActorId = new Guid("6575fe75-be17-4e7e-aa66-1ed9ae6e6b9b"), 
+            MovieId = new Guid("b8762ed8-3b19-441c-a60c-88b913437b11") 
+        };
+        db.MovieActor.Add(ma);
         db.SaveChanges();
         */
-
-        /* 
-        var m = db.Movies.FirstOrDefault(x => x.Id == 1);
-        Console.WriteLine(m.Name);
-        Console.WriteLine(m.Actors.Count());
-        Console.WriteLine(m.ActorsIds.Count());
-        */    
     }
 }
 
-// domain entity
 public class Actor 
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string Name { get; set; }
+    // public List<Guid> MoviesIds { get; set; }
 }
 
-// domain entity
 public class Movie
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string Name { get; set; }
-    public List<int> ActorIds { get; set; }
-
+    public List<Guid> ActorsIds { get; set; }
 }
+
 
 // infra object representing the relation
 public class MovieActor
 {
-    public int MovieId { get; set; }
+    public Guid MovieId { get; set; }
     public Movie Movie { get; set; }
 
-    public int ActorId { get; set; }
+    public Guid ActorId { get; set; }
     public Actor Actor { get; set; }
 }
+
 
 // Movie repository
 public class MovieRepository
@@ -71,7 +76,20 @@ public class MovieRepository
         _db = db;
     }
 
-    
+    public void Insert(Movie movie)
+    {
+        _db.Movies.Add(movie);
+        _db.MovieActor.AddRange(movie.ActorsIds.Select(x => new MovieActor(){ ActorId = x, MovieId = movie.Id }));
+        _db.SaveChanges();
+    }
+
+    public void Update(Movie movie)
+    {
+        /* _db.Movies.Update(movie);
+        _db.MovieActor.RemoveRange(_db.MovieActor.Where(x => ));
+        _db.MovieActor.AddRange(movie.ActorIds.Select(x => new MovieActor(){ ActorId = x, MovieId = movie.Id }));
+        _db.SaveChanges(); */
+    }
 }
 
 // db context
@@ -85,8 +103,8 @@ public class AppContext : DbContext
 
     public AppContext() : base()
     {
-        Database.EnsureDeleted();
-        Database.EnsureCreated();
+        // Database.EnsureDeleted();
+        // Database.EnsureCreated();
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -101,10 +119,11 @@ public class AppContext : DbContext
     {
         modelBuilder
             .Entity<Movie>()
-            .Ignore(x => x.ActorIds);
+            .Ignore(x => x.ActorsIds);
+        
         
         modelBuilder
             .Entity<MovieActor>()
-            .HasKey(x => new { x.MovieId, x.ActorId });
+            .HasKey(x => new{ x.ActorId, x.MovieId }); 
     }
 }
