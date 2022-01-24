@@ -61,6 +61,10 @@ Para criação do banco de dados com docker:
     );
 ```
 
+CPF e E-mail:
+<img width="517" alt="image" src="https://user-images.githubusercontent.com/20674439/150800485-2f81b86c-19f9-44ad-85ef-a289615d89cb.png">
+
+
 ## Relations
 
 #### Lazy Loading
