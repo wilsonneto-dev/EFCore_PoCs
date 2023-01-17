@@ -27,27 +27,29 @@ public class Program
             db.SaveChanges();
         }
 
-        Console.WriteLine(" --- updating...");
+        // Console.WriteLine(" --- updating...");
         var newDbContext = new AppContext();
-        var video2 = newDbContext.Videos.AsNoTracking().Where(x => x.Id == id).First();
-
+        var video2 = newDbContext.Videos.Where(x => x.Id == id).First();
+        
         video2.UpdateThumb("new:thumb-path");
         video2.UpdateBanner("new:banner-path");
         video2.UpdateMedia("new:media-path", "new:encoded-media-path");
         video2.UpdateTrailer("new:trailer-path", "new:encoded-trailer-path");
 
+        
+        Console.WriteLine(JsonSerializer.Serialize(new{
+            video = newDbContext.Entry(video2).State,
+            media = newDbContext.Entry(video2.Media).State,
+            trailer = newDbContext.Entry(video2.Trailer).State,
+        }));
+        
+        // newDbContext.Add(video2);
+        // newDbContext.Videos.Update(video2);
+        
+        newDbContext.SaveChanges();
+
         Console.WriteLine(JsonSerializer.Serialize(video2, new JsonSerializerOptions() { WriteIndented = true }));
 
-        // newDbContext.Add(video2);
-        newDbContext.Videos.Update(video2);
-
-        // Console.WriteLine(JsonSerializer.Serialize(new{
-        //     video = newDbContext.Entry(video2).State,
-        //     media = newDbContext.Entry(video2.Media).State,
-        //     trailer = newDbContext.Entry(video2.Trailer).State,
-        // }));
-
-        newDbContext.SaveChanges();
     }
 }
 
@@ -68,8 +70,8 @@ public class AppContext : DbContext
                 a.Property(p => p.Path).IsRequired(false).HasColumnName("BannerPath");
             });
             
-            p.HasOne(x => x.Media).WithOne().HasForeignKey<Video>("MediaId");
-            p.HasOne(x => x.Trailer).WithOne().HasForeignKey<Video>("TrailerId");
+            // p.HasOne(x => x.Media).WithOne().HasForeignKey<Video>("MediaId");
+            // p.HasOne(x => x.Trailer).WithOne().HasForeignKey<Video>("TrailerId");
             // p.HasOne(x => x.Media).WithOne("VideoId").HasForeignKey<Media>();
         });
 
@@ -96,10 +98,10 @@ public class AppContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder
-            .LogTo(Console.WriteLine, Microsoft.Extensions.Logging.LogLevel.Information)
-            .EnableSensitiveDataLogging()
+            // .LogTo(Console.WriteLine, Microsoft.Extensions.Logging.LogLevel.Information)
+            // .EnableSensitiveDataLogging()
             .UseSqlServer(@"Server=localhost;Database=company02;User Id=sa;Password=Str0ngP455W0RD;trustServerCertificate=true;");
-            //.UseSqlite("Data Source=./Application.db;");
+            // .UseSqlite("Data Source=./Application.db;");
             // .UseSqlite("Data Source=Sharable;Mode=Memory;Cache=Shared");
             // .UseInMemoryDatabase("general");
     }
@@ -120,6 +122,7 @@ public class Video
     
     public Media? Media { get; private set; }
     public Media? Trailer { get; private set; }
+
     public Image? Thumb { get; private set; }
     public Image? Banner { get; private set; }
 
@@ -144,18 +147,12 @@ public class Video
     }
 }
 
-public class Image
-{
-    public Image(string path) => Path = path;
-
-    public string Path { get; init; }
-}
+public record Image(string Path);
 
 public class Media
 {
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public Guid Id { get; private set; }
+
     public string Path { get; private set; }
     public string EncodedPath { get; private set; }
 
